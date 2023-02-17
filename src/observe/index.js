@@ -21,7 +21,6 @@ class Observer {
 
       // 需要保留原有的特性，并且重写部分方法
       data.__proto__ = newArrayProto;
-      console.log('array', data);
       this.observeArray(data);
     } else {
       this.walk(data);

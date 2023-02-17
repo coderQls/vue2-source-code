@@ -25,7 +25,6 @@ export function initMixin(Vue) {
     el = document.querySelector(el);
 
     let options = vm.$options;
-
     // 先进行查找是否有render函数
     if (!options.render) {
       let template;
@@ -36,10 +35,10 @@ export function initMixin(Vue) {
       } else if (options.template) {
         template = options.template;
       }
-
+      console.log(template);
       if (template) {
         // 这里需要对模板进行编译
-        const render = compileToFunction();
+        const render = () => compileToFunction(template);
         options.render = render;
       }
     }
