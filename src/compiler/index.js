@@ -1,139 +1,76 @@
-const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`; // 标签名
-const qnameCapture = `((?:${ncname}\\:)?${ncname})`;
-const startTagOpen = new RegExp(`^<${qnameCapture}`); // 匹配到的分组是一个标签名 如：<div
-const startTagClose = /^\s*(\/?)>/; // 匹配自闭合标签 <div> 或 <br />
-const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`); // 匹配结束标签 </div>
-// 匹配属性 匹配分组的[1]是属性key，[3] || [4] || [5]是value
-const attribute =
-  /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
-const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // {{XXXX}} 匹配到的内容就是表达式的变量
+import { parseHTML } from './parse';
 
-// vue3采用的不是正则
-
-// 解析模板
-function parseHTML(html) {
-  const ELEMENT_TYPE = 1;
-  const TEXT_TYPE = 3;
-  const stack = []; // 用于存放元素
-  let currentParent; // 指向栈中的最后一个
-  let root;
-
-  // 最终需要转化成一颗抽象语法树
-
-  function createASTElement(tag, attrs) {
-    return {
-      tag,
-      type: ELEMENT_TYPE,
-      children: [],
-      attrs,
-      parent: null,
-    };
-  }
-
-  function start(tag, attrs) {
-    let node = createASTElement(tag, attrs);
-    // 是否为空树
-    if (!root) {
-      root = node; // 如果为空，则当前是树的空节点
-    }
-    if (currentParent) {
-      node.parent = currentParent; // 只赋予了parent属性
-      currentParent.children.push(node); // 还需要与父节点的children属性连接
-    }
-
-    stack.push(node);
-    currentParent = node;
-  }
-
-  function chars(text) {
-    text = text.trim();
-    text &&
-      currentParent.children.push({
-        type: TEXT_TYPE,
-        text,
-        parent: currentParent,
+function genProps(attrs) {
+  let str = ''; // {name, value}
+  for (let i = 0; i < attrs.length; i++) {
+    let attr = attrs[i];
+    // console.log(attr);
+    if (attr.name === 'style') {
+      // style="color: red; background: green" => { style: { color: 'red', background: 'green' } }
+      let obj = {};
+      attr.value.split(';').forEach((item) => {
+        let [key, value] = item.split(':');
+        obj[key.trim()] = value.trim();
       });
-  }
-
-  function end(tag) {
-    let node = stack.pop(); // 弹出最后一个
-    // if (tag != node) {
-    //   console.error('标签不一致');
-    // }
-    currentParent = stack[stack.length - 1]; // currentParent 重新指向最后一个
-  }
-
-  // 指针前进的步数
-  function advance(n) {
-    html = html.substring(n);
-  }
-
-  // 解析开始标签
-  function parseStartTag() {
-    const start = html.match(startTagOpen);
-    // 如果是开始标签
-    if (start) {
-      const match = {
-        tagName: start[1], // 标签名
-        attrs: [], // attrs[0]是key，attr[1]是value
-      };
-      advance(start[0].length);
-
-      // 如果不是开始标签的结束 就一直匹配下去
-      let attr, end;
-      // 匹配属性
-      while (
-        !(end = html.match(startTagClose)) &&
-        (attr = html.match(attribute))
-      ) {
-        advance(attr[0].length);
-        // console.log('attr', attr);
-        match.attrs.push({
-          name: attr[1],
-          value: attr[3] || attr[4] || attr[5] || true, // 如 disabled 属性，没有值时默认值为true
-        });
-      }
-      if (end) {
-        advance(end[0].length);
-      }
-      // console.log(match);
-      return match; // 不是开始标签
+      attr.value = obj;
     }
 
-    return false; // 不是开始标签
+    str += `${attr.name}:${JSON.stringify(attr.value)},`;
   }
+  return `{${str.slice(0, -1)}}`;
+}
 
-  // html最开始的肯定是一个 <
-  while (html) {
-    // 如果textEnd 为 0，则说明是一个开始标签或结束标签
-    // 如果textEnd > 0，则说明就是文本的结束位置
-    let textEnd = html.indexOf('<');
-    if (textEnd == 0) {
-      const startTagMatch = parseStartTag(); // 开始标签的匹配结果
-      if (startTagMatch) {
-        // 解析到开始标签
-        start(startTagMatch.tagName, startTagMatch.attrs);
-        continue;
+const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // {{XXXX}} 匹配到的内容就是表达式的变量
+function gen(node) {
+  // 是元素
+  if (node.type === 1) {
+    return codegen(node);
+  } else {
+    // 文本
+    let text = node.text;
+    // 文本中不包含mustache语法
+    if (!defaultTagRE.test(text)) {
+      return `_v(${JSON.stringify(text)})`;
+    } else {
+      // 文本中包含mustache
+      let tokens = [];
+      let match;
+      defaultTagRE.lastIndex = 0;
+      let lastIndex = 0;
+      while ((match = defaultTagRE.exec(text))) {
+        // console.log(match);
+        let index = match.index;
+
+        if (index > lastIndex) {
+          tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+        }
+
+        tokens.push(`_s(${match[1].trim()})`);
+        lastIndex = index + match[0].length; // 匹配完后的末尾
       }
 
-      const endTagMatch = html.match(endTag);
-      if (endTagMatch) {
-        end(endTagMatch[1]);
-        advance(endTagMatch[0].length);
-        continue;
+      if (lastIndex < text.length) {
+        tokens.push(JSON.stringify(text.slice(lastIndex)));
       }
-    }
-
-    if (textEnd > 0) {
-      const text = html.substring(0, textEnd); // 文本内容
-      if (text) {
-        // 解析到文本
-        chars(text);
-        advance(text.length);
-      }
+      return `_v(${tokens.join('+')})`;
     }
   }
-  console.log(root);
+}
+
+function genChildren(children) {
+  return children.map((child) => gen(child)).join(',');
+}
+
+function codegen(ast) {
+  let children = genChildren(ast.children);
+  // console.log('children', children);
+  // _c(标签，属性，children) 创建元素
+  // _v() 创建文本
+  // _s() JSON.stringify()
+  let code = `_c('${ast.tag}',${
+    ast.attrs.length > 0 ? genProps(ast.attrs) : 'null'
+  }${ast.children.length ? `,${children}` : ''})`;
+  return code;
 }
 
 // 对模板进行编译处理
@@ -142,4 +79,27 @@ export function compileToFunction(template) {
   let ast = parseHTML(template);
 
   // 2. 生成render方法（render方法执行后的返的结果就是虚拟dom）
+
+  // 模板引擎的实现原理就是 with + new Function()
+  // console.log(codegen(ast));
+  let code = codegen(ast);
+  code = `with(this) {return ${code}}`;
+
+  // 根据代码生成render函数
+  // function render() {
+  //   with (this) {
+  //     return _c(
+  //       'div',
+  //       { id: 'app', style: { color: 'red', ' background': 'yellow' } },
+  //       _c('div', null, _v(_s(name) + ' hello ' + _s(age))),
+  //       _c('span', null, _v('world'))
+  //     );
+  //   }
+  // }
+  const render = new Function(code);
+  return render;
+
+  // render(h) {
+  //   return h('div', { id: 'app' }, h('div', {style: {color: 'red'}}, _v(name + 'hello')))
+  // }
 }
