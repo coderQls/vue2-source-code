@@ -1,3 +1,4 @@
+import Watcher from './observe/watcher';
 import { createElementVnode, createTextVnode } from './vdom';
 
 function createElm(vnode) {
@@ -89,11 +90,18 @@ export function initLifecycle(Vue) {
 }
 
 export function mountComponent(vm, el) {
+  const updateComponent = () => {
+    vm._update(vm._render()); // vm.$options.render() 返回虚拟节点
+  };
+
   // 这里的el是通过querySelector处理过的
   vm.$el = el;
   // 1. 调用render方法产生虚拟节点 虚拟dom
-  vm._update(vm._render()); // vm.$options.render() 返回虚拟节点
+  const watcher = new Watcher(vm, updateComponent, true); // true用于标识是一个渲染过程
+
+  console.log(watcher);
   // 2. 根据虚拟dom产生正式dom
+
   // 3. 插入到el元素中
 
   // vue核心流程：

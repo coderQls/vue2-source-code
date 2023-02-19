@@ -1,4 +1,5 @@
 import { newArrayProto } from './array';
+import Dep from './dep';
 
 class Observer {
   constructor(data) {
@@ -45,10 +46,14 @@ export function defineReactive(target, key, value) {
   // 劫持value，如果value为对象，则会对对象属性再次劫持
   observe(value);
 
+  let dep = new Dep(); // 每个属性都有一个dep
   Object.defineProperty(target, key, {
     // 取值的时候会执行get
     get() {
-      console.log('用户取值了');
+      // Deo.target是否有值，有则说明有组件正在渲染,指向当前正在渲染额组件
+      if (Dep.target) {
+        dep.depend();
+      }
       return value;
     },
 
@@ -60,6 +65,8 @@ export function defineReactive(target, key, value) {
       // 当赋值时，再次劫持新值
       observe(newValue);
       value = newValue;
+      // 当属性值发生改变时，通知更新
+      dep.notify();
     },
   });
 }
