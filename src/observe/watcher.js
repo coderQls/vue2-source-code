@@ -8,18 +8,26 @@ let id = 0;
 // 1. 当我们创建渲染watcher的时候，我们会把当前的渲染watcher放到Dep.target上
 // 2. 调用_render 会取值 走到get上
 class Watcher {
-  constructor(vm, fn, options) {
+  constructor(vm, exprOrFn, options, cb) {
     this.id = id++;
     this.vm = vm;
     this.renderWatcher = options; // 是一个渲染过程
-    this.getter = fn; // getter意味着调用这个函数可以发生取值操作
+    if (typeof exprOrFn === 'string') {
+      this.getter = () => vm[exprOrFn];
+    } else {
+      // 意味着调用这个函数就可以发生取值操作
+      this.getter = exprOrFn;
+    }
+    // this.getter = fn; // getter意味着调用这个函数可以发生取值操作
     this.deps = [];
     this.depsId = new Set();
 
     this.lazy = options.lazy;
     this.dirty = this.lazy; // 缓存值
 
-    this.value ? undefined : this.get();
+    this.value = this.lazy ? undefined : this.get();
+    this.cb = cb;
+    this.user = options.user; // 标识是否是用户自己的watcher
   }
 
   // 一个组件对应着多个属性，重复的属性也不用记录
@@ -73,7 +81,11 @@ class Watcher {
   }
 
   run() {
-    this.get();
+    let oldValue = this.value;
+    let newValue = this.get();
+    if (this.user) {
+      this.cb.call(this.vm, newValue, oldValue);
+    }
   }
 }
 

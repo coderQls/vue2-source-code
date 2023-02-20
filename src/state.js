@@ -14,6 +14,10 @@ export function initState(vm) {
   if (opts.computed) {
     initComputed(vm);
   }
+
+  if (opts.watch) {
+    initWatch(vm);
+  }
 }
 
 function proxy(vm, target, key) {
@@ -84,14 +88,39 @@ function createComputedGetter(key) {
     // 由于第一次求值时已经将dirty设置为false，后续取值时不能进入判断
     if (watcher.dirty) {
       // 如果是ditry是true，就去执行用户传入的函数
-      watcher.evaluate();
+      watcher.evaluate(); // 执行计算后，计算属性watcher会出栈
     }
 
     // 计算属性出栈后，如果还有渲染watcher，应该让计算属性watcher里面的属性，收集上层watcher
+    // Dep.target 指渲染watcher
     if (Dep.target) {
-      watcher.depend();
+      watcher.depend(); // 计算属性watcher里面的属性，收集上层watcher
     }
 
     return watcher.value;
   };
+}
+
+// 初始化watch
+function initWatch(vm) {
+  let watch = vm.$options.watch;
+
+  for (let key in watch) {
+    const handler = watch[key]; // 字符串 数组 函数
+
+    if (Array.isArray(handler)) {
+      for (let i = 0; i < handler.length; i++) {
+        createWatcher(vm, key, handler[i]);
+      }
+    } else {
+      createWatcher(vm, key, handler);
+    }
+  }
+}
+
+function createWatcher(vm, key, handler) {
+  if (typeof handler === 'string') {
+    handler = vm[handler];
+  }
+  return vm.$watch(key, handler);
 }
