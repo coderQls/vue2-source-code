@@ -1,6 +1,7 @@
 import { compileToFunction } from './compiler';
-import { mountComponent } from './lifecycle';
+import { callHook, mountComponent } from './lifecycle';
 import { initState } from './state';
+import { mergeOptions } from './utils';
 
 // initMixin给Vue添加init方法的
 export function initMixin(Vue) {
@@ -10,10 +11,20 @@ export function initMixin(Vue) {
     // vue vm.$options 就是用户的配置，此处将options挂在在vue实例上是为了在其他地方能用到
     // 我们使用的vue的时候 $nextTick $attr 等都是在vue的实例上，用$开头
     // 将用户的选项挂在到实例上
-    vm.$options = options;
+
+    // 定义的全局指令和过滤器等都会挂载到实例上
+    // this是实例，this.constructor指向Vue
+    // 通过mergeOptions合并mixin中的options
+    vm.$options = mergeOptions(this.constructor.options, options);
+    console.log(vm.$options);
+
+    // 状态初始化前调用beforeCreate钩子
+    callHook(vm, 'beforeCreate');
 
     // 初始化状态
     initState(vm);
+
+    callHook(vm, 'created');
 
     if (options.el) {
       // 实现数据的挂载
@@ -36,7 +47,7 @@ export function initMixin(Vue) {
       } else if (options.template) {
         template = options.template;
       }
-      console.log(template);
+      // console.log(template);
       if (template) {
         // 这里需要对模板进行编译
         const render = compileToFunction(template);

@@ -99,7 +99,7 @@ export function mountComponent(vm, el) {
   // 1. 调用render方法产生虚拟节点 虚拟dom
   const watcher = new Watcher(vm, updateComponent, true); // true用于标识是一个渲染过程
 
-  console.log(watcher);
+  // console.log(watcher);
   // 2. 根据虚拟dom产生正式dom
 
   // 3. 插入到el元素中
@@ -112,4 +112,11 @@ export function mountComponent(vm, el) {
 
   // render 函数会去产生虚拟节点（使用响应式数据）
   // 根据生成的虚拟节点创造真实的dom
+}
+
+export function callHook(vm, hook) {
+  const handlers = vm.$options[hook];
+  if (handlers) {
+    handlers.forEach((handler) => handler.call(vm));
+  }
 }
