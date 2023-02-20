@@ -1,5 +1,5 @@
 // 每个组件都有其独自的watcher观察其内部数据的变化，从而不会影响其他组件
-import Dep from './dep';
+import { popTarget, pushTarget } from './dep';
 
 let id = 0;
 
@@ -10,11 +10,16 @@ let id = 0;
 class Watcher {
   constructor(vm, fn, options) {
     this.id = id++;
+    this.vm = vm;
     this.renderWatcher = options; // 是一个渲染过程
     this.getter = fn; // getter意味着调用这个函数可以发生取值操作
     this.deps = [];
     this.depsId = new Set();
-    this.get();
+
+    this.lazy = options.lazy;
+    this.dirty = this.lazy; // 缓存值
+
+    this.value ? undefined : this.get();
   }
 
   // 一个组件对应着多个属性，重复的属性也不用记录
@@ -29,18 +34,42 @@ class Watcher {
     }
   }
 
+  // 求值
+  evaluate() {
+    this.value = this.get(); // 获取用户的数据为返回值，并且还需要标识为脏（dirty）
+    this.dirty = false;
+  }
+
   get() {
     // 在组件渲染的时候，将Dep.target指向当前渲染的组件
-    Dep.target = this;
-    this.getter(); // 会去vm上取值，调用渲染函数 vm._update(vm._render) 取name 和age
+    // Dep.target = this;
+    pushTarget(this); // 当渲染时，将当前的watcher入当前属性的栈
+    let value = this.getter.call(this.vm); // 会去vm上取值，调用渲染函数 vm._update(vm._render) 取name 和age
     // 当前组件渲染完成后将Dep.target重置为null
-    Dep.target = null;
+    // Dep.target = null;
+
+    // 当渲染完成后，将当前watcher出栈
+    popTarget();
+    return value;
+  }
+
+  depend() {
+    let i = this.deps.length;
+    while (i--) {
+      this.deps[i].depend();
+    }
   }
 
   // 更新视图组件
   update() {
-    // this.get(); // 重新渲染(此处每次数据有更新就会重新渲染，会浪费性能，因此需要放在队列中统一更新)
-    queueWatcher(this); // 把当前的watcher暂存提来
+    // 如果是计算属性
+    if (this.lazy) {
+      // 依赖的属性变化了，就标识计算属性时脏值
+      this.dirty = true;
+    } else {
+      // this.get(); // 重新渲染(此处每次数据有更新就会重新渲染，会浪费性能，因此需要放在队列中统一更新)
+      queueWatcher(this); // 把当前的watcher暂存提来
+    }
   }
 
   run() {
@@ -70,7 +99,7 @@ function queueWatcher(watcher) {
     // 需要做到不管update执行多少次，但是渲染最终只执行一次
 
     if (!pending) {
-      setTimeout(flushSchedulerQueue, 0);
+      nextTick(flushSchedulerQueue, 0);
       pending = true;
     }
   }

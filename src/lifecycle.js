@@ -90,12 +90,13 @@ export function initLifecycle(Vue) {
 }
 
 export function mountComponent(vm, el) {
+  // 这里的el是通过querySelector处理过的
+  vm.$el = el;
+
   const updateComponent = () => {
     vm._update(vm._render()); // vm.$options.render() 返回虚拟节点
   };
 
-  // 这里的el是通过querySelector处理过的
-  vm.$el = el;
   // 1. 调用render方法产生虚拟节点 虚拟dom
   const watcher = new Watcher(vm, updateComponent, true); // true用于标识是一个渲染过程
 

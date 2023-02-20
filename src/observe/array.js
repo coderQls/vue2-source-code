@@ -40,6 +40,7 @@ methods.forEach((method) => {
       // 对新增的内容再次进行规划
       ob.observeArray(inserted);
     }
+    ob.dep.notify();
     return result;
   };
 });

@@ -9,10 +9,10 @@ function Vue(options) {
   // options就是用户的选项
   this._init(options);
 }
-
 Vue.prototype.$nextTick = nextTick;
 initMixin(Vue); // 扩展了init方法
 initLifecycle(Vue);
 initGlobalAPI(Vue);
+// initStateMixin(Vue);
 
 export default Vue;

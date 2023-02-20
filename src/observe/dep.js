@@ -33,4 +33,15 @@ class Dep {
 // 当一个组件渲染完后会重置为null
 Dep.target = null;
 
+// 当一个属性绑定多个watcher时，需要用栈来维护
+let stack = [];
+export function pushTarget(watcher) {
+  stack.push(watcher);
+  Dep.target = watcher;
+}
+export function popTarget() {
+  stack.pop();
+  Dep.target = stack[stack.length - 1];
+}
+
 export default Dep;
