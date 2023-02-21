@@ -1,60 +1,6 @@
 import Watcher from './observe/watcher';
 import { createElementVnode, createTextVnode } from './vdom';
-
-function createElm(vnode) {
-  let { tag, data, children, text } = vnode;
-
-  // 标签
-  if (typeof tag === 'string') {
-    // 这里将真实节点与虚拟节点对应起来
-    vnode.el = document.createElement(tag);
-
-    patchProps(vnode.el, data);
-
-    children.forEach((child) => {
-      vnode.el.appendChild(createElm(child));
-    });
-  }
-  // 文本
-  else {
-    vnode.el = document.createTextNode(text);
-  }
-  return vnode.el;
-}
-
-function patchProps(el, props) {
-  for (let key in props) {
-    if (key === 'style') {
-      for (let styleName in props.style) {
-        el.style[styleName] = props.style[styleName];
-      }
-    } else {
-      el.setAttribute(key, props[key]);
-    }
-  }
-}
-
-// 将vdom转化成真实dom
-// patch既有初始化的功能，又有更新的功能
-// 当oldVnode是真实dom时，则将vnode转换成真实dom，如果是vdom，则对比更新
-function patch(oldVnode, vnode) {
-  const isRealElement = oldVnode.nodeType;
-
-  // 判断是否是真实元素
-  if (isRealElement) {
-    const elm = oldVnode;
-    const parentElm = elm.parentNode; // 查到父元素
-    let newElm = createElm(vnode, parentElm);
-    // 将新节点插入到旧节点后面
-    parentElm.insertBefore(newElm, elm.nextSibling);
-    // 删除旧节点
-    parentElm.removeChild(elm);
-
-    return newElm;
-  } else {
-    // diff
-  }
-}
+import { patch } from './vdom/patch';
 
 export function initLifecycle(Vue) {
   // 将虚拟dom生成真是dom

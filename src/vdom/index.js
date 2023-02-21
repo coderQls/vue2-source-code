@@ -28,3 +28,8 @@ function vnode(vm, tag, key, data, children, text) {
     text,
   };
 }
+
+// 判断是否是同一个虚拟节点
+export function isSameVnode(vnode1, vnode2) {
+  return vnode1.tag === vnode2.tag && vnode1.key === vnode2.key;
+}

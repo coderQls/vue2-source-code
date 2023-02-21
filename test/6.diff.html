@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">
+      <ul>
+        <li v-for="a in arr">{{a}}<input type="checkbox" /></li>
+        <button @click="append">追加</button>
+      </ul>
+    </div>
+
+    <!-- <script src="../dist/vue.js"></script> -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.13/vue.js"></script>
+
+    <script>
+      // 1. 实现different算法
+      // 在之前的更新中每次更新都会产生新的虚拟节点，通过新的虚拟节点生成真实节点，生成后替换掉老的节点
+      // 在第一次渲染的时候我们会产生虚拟节点，第二次更新我们也会调用render方法产生新的虚拟节点。比较需要更新的内容更新部分内容
+      // 2. 组件渲染原理
+      const vm = new Vue({
+        el: '#app',
+        data() {
+          return {
+            arr: ['香蕉', '苹果', '橘子'],
+          };
+        },
+        methods: {
+          append() {
+            this.arr.unshift('桃子');
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

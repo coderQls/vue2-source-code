@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <!-- 由于没有对注释进行解析，所以#app内不能出现注释 -->
+    <div id="app">
+      <div>firstname {{firstname}}</div>
+      <div>fullname {{fullname}}</div>
+    </div>
+
+    <script src="../dist/vue.js"></script>
+
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.13/vue.js"></script> -->
+
+    <script>
+      const vm = new Vue({
+        el: '#app',
+        data() {
+          return {
+            firstname: 'hello',
+            lastname: 'world',
+          };
+        },
+        // 计算属性，依赖的值发生变化才会重新执行用户的方法
+        // 计算属性中要维护一个dirty属性，当get方法执行后，缓存其结果，并将dirty赋值为false，下次再取值时世界用缓存的值
+        // 计算属性就是一个defineProperty
+        // 计算属性也是一个watcher，默认渲染会创造一个watcher  渲染watcher -> 计算watcher -> 属性
+        computed: {
+          newName() {
+            return '8899';
+          },
+          // 函数式，相当于defineProperty中的get方法
+          fullname() {
+            console.log('run');
+            return this.firstname + this.lastname + this.newName;
+          },
+          // fullname: {
+          //   get() {
+          //     return this.firstname + this.lastname;
+          //   },
+          //   set(newVal) {
+          //     console.log(newVal);
+          //   },
+          // },
+        },
+      });
+
+      setTimeout(() => {
+        vm.firstname = '123';
+      }, 2000);
+    </script>
+  </body>
+</html>

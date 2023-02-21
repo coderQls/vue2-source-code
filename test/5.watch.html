@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">
+      <div>{{firstname}}</div>
+    </div>
+
+    <script src="../dist/vue.js"></script>
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.13/vue.js"></script> -->
+
+    <script>
+      vm = new Vue({
+        el: '#app',
+        data: {
+          firstname: 'aaa',
+          lastname: 'bbb',
+        },
+        methods: {
+          fn: (newValue, oldValue) => {
+            console.log('firstname更新处理函数1', newValue, oldValue);
+          },
+        },
+        watch: {
+          // 1. 函数写法
+          firstname(newValue, oldValue) {
+            console.log('firstname更新', newValue, oldValue);
+          },
+          // 2. 数组写法
+          // firstname: [
+          //   'fn', // fn是函数名
+          //   (newValue, oldValue) => {
+          //     console.log('firstname更新处理函数2', newValue, oldValue);
+          //   },
+          // ],
+        },
+      });
+
+      // 3. $watch写法
+      // 底层就算写的是上面的方式，都会转换为$watch写法
+      // vm.$watch(
+      //   // () => vm.firstname,
+      //   'firstname',
+      //   (newValue, oldValue) => {
+      //     console.log('$watch写法', newValue, oldValue);
+      //   }
+      // );
+
+      setTimeout(() => {
+        vm.firstname = 'ccc';
+      }, 1000);
+    </script>
+  </body>
+</html>

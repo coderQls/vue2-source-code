@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <!-- 我们可以给模板中的属性 增加一个收集器dep -->
+    <!-- 页面渲染的时候 我们将渲染逻辑到一个watcher中 vm._update(vm._render()) -->
+    <!-- 让dep记住这个watcher即可，稍后属性变化了可以找到对应的dep中存放的watcher进行重新渲染 -->
+    <!-- 观察者模式 -->
+    <!-- <div id="app" style="color: red; background: yellow">
+      <div>{{name}} hello {{age}} {{name}}</div>
+      <span>world</span>
+    </div> -->
+
+    <!-- arr在这里取值时会调用JSON.stringify,会对数组中的对象取值，所以对象会收集依赖 -->
+    <!-- _v(_s(arr)) -->
+    <div id="app">{{arr}}</div>
+
+    <script src="../dist/vue.js"></script>
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.13/vue.js"></script> -->
+
+    <script>
+      // 源码内部会将多个mixin中created合并成一个队列，依次执行
+      // Vue.mixin({
+      //   created() {
+      //     console.log('mixin1 created');
+      //   },
+      // });
+      // Vue.mixin({
+      //   created() {
+      //     console.log('mixin2 created');
+      //   },
+      // });
+
+      const vm = new Vue({
+        el: '#app',
+        data() {
+          return {
+            // 代理数据
+            arr: [1, 2, 3, { a: 1 }, ['a', 'b']], // 给数组本身增加dep，如果数组增加了某一项，可以触发更新
+            a: { a: 1 }, // 给对象也增加dep，如果后续用户增添了属性，饿哦可以触发dep更新
+          };
+        },
+        // el: '#app', // 我们要将数据 解析到了元素上
+        // template: '<div>hhhh</div>',
+        // render() {
+        //   return;
+        // },
+        // created() {
+        //   // console.log(this.xxx); // 数据来源不明确
+        //   console.log('created');
+        // },
+      });
+
+      // vm.$mount('#app');
+      // 1. 模板引擎 性能差 需要正则匹配替换 1.0的时候没有引入虚拟dom的改变
+      // 2. 采用虚拟dom，数据变化后比较虚拟dom的差异，最后更新需要更新的地方
+      // 3. 核心就是我们需要将 模板变成我们的js语法，通过js语法生成虚拟dom
+
+      // 从一个东西变成另一个东西，语法上的转换 es6 -> es5 等
+      // 我们需要先将现有语法变成语法书，再重新编译成新的语法
+      // 将template语法转换为render函数
+
+      // 属性和视图自动关联起来，做到数据变化可以自动关联视图（观察者模式）
+      // 实现：
+      // 1. 将数据先处理成响应式 initState（针对对象来说主要是增加defineProperty, 针对数组就是重写方法）
+      // 2. 模板编译，将模板先转换成ast语法树，再将ast语法树生成render方法
+      // 3. 调用render函数，会进行取值操作，产生对应的虚拟dom，render方法 render() { _c('div', null, _v(name))}
+      // 4. 再调用_update，patch将虚拟dom渲染成真实dom
+
+      // nextTick不是创建了一个异步任务，而是将这个任务维护好了队列中而已
+      // vm.$nextTick(() => {
+      //   console.log(app.innerHTML);
+      // });
+
+      // vm.arr[0] = 100; // 这种方法不能监测到数组变化
+      // vm.arr.length = 100; // 这种方法也能监测，没有监控长度的变化
+      // vm.arr.push(100); // 使用数组方法可以
+
+      // vm.a.b = 100; // 给对象增加属性不会触发更新
+      // vm.a.__ob__.dep.notify(); // 这样才能手动更细，$set原理
+
+      vm.arr[4].push('c');
+    </script>
+  </body>
+</html>

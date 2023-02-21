@@ -1,6 +1,6 @@
 import Dep from './observe/dep';
 import { observe } from './observe/index';
-import Watcher from './observe/watcher';
+import Watcher, { nextTick } from './observe/watcher';
 
 // 初始化状态
 export function initState(vm) {
@@ -123,4 +123,18 @@ function createWatcher(vm, key, handler) {
     handler = vm[handler];
   }
   return vm.$watch(key, handler);
+}
+
+export function initStateMixin(Vue) {
+  Vue.prototype.$nextTick = nextTick;
+
+  // watch最终调用的都是这个api
+  // exprOrFn 表达式或函数
+  Vue.prototype.$watch = function (exprOrFn, cb, options) {
+    console.log(exprOrFn, cb, options);
+
+    // exprOrfn firstname或() => vm.firstname
+    // user表示是否是用户自定义的watch
+    new Watcher(this, exprOrFn, { user: true }, cb);
+  };
 }
